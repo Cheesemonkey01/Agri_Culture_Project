@@ -1,0 +1,199 @@
+﻿openapi: 3.0.0
+info:
+  title: Smart Agriculture API
+  version: '1.0'
+  description: API für Smart Agriculture Messdaten, Alerts und Authentifizierung.
+servers:
+  - url: http://localhost:8000
+paths:
+  /:
+    get:
+      summary: API Root
+      description: Basis-Endpoint zur Verfügbarkeit der API.
+      responses:
+        '200':
+          description: Erfolgreiche Antwort mit API-Hinweis.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+  /health:
+    get:
+      summary: Systemstatus
+      description: Liefert den aktuellen Status und einen Zeitstempel.
+      responses:
+        '200':
+          description: API ist erreichbar.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                  timestamp:
+                    type: string
+                    format: date-time
+  /sensors:
+    get:
+      summary: Sensor-Messwerte abfragen
+      description: Liefert die zuletzt eingelesenen Messwerte.
+      parameters:
+        - name: limit
+          in: query
+          description: Anzahl der zurückzugebenden Messwerte.
+          required: false
+          schema:
+            type: integer
+            default: 10
+      responses:
+        '200':
+          description: Liste der Sensor-Messwerte.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  count:
+                    type: integer
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Measurement'
+  /statistics:
+    get:
+      summary: Statistik der Messdaten
+      description: Berechnet Kennwerte für pH und Bodenfeuchte.
+      responses:
+        '200':
+          description: Statistikdaten.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Statistics'
+  /alerts:
+    get:
+      summary: Alerts erzeugen
+      description: Liefert aktuelle Alerts basierend auf der letzten Messung.
+      responses:
+        '200':
+          description: Alerts und letzte Messung.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  alerts:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Alert'
+                  latest_measurement:
+                    $ref: '#/components/schemas/Measurement'
+  /login:
+    post:
+      summary: Anmeldung
+      description: Authentifiziert einen Benutzer und gibt ein Demo-Token zurück.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Token oder Fehlernachricht.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/TokenResponse'
+                  - $ref: '#/components/schemas/ErrorResponse'
+components:
+  schemas:
+    Measurement:
+      type: object
+      properties:
+        timestamp:
+          type: string
+          format: date-time
+        soil_moisture_percent:
+          type: number
+        soil_temperature_c:
+          type: number
+        air_temperature_c:
+          type: number
+        air_humidity_percent:
+          type: number
+        ph_value:
+          type: number
+        irrigation_active:
+          type: boolean
+        system_status:
+          type: string
+    Statistics:
+      type: object
+      properties:
+        sample_count:
+          type: integer
+        ph_mean:
+          type: number
+        ph_median:
+          type: number
+        ph_std:
+          type: number
+        ph_variance:
+          type: number
+        ph_cpl:
+          type: number
+          nullable: true
+        ph_cpu:
+          type: number
+          nullable: true
+        ph_cp:
+          type: number
+          nullable: true
+        ph_cpk:
+          type: number
+        soil_moisture_mean:
+          type: number
+        soil_moisture_min:
+          type: number
+        soil_moisture_max:
+          type: number
+    Alert:
+      type: object
+      properties:
+        timestamp:
+          type: string
+          format: date-time
+        type:
+          type: string
+        severity:
+          type: string
+        message:
+          type: string
+    LoginRequest:
+      type: object
+      required:
+        - username
+        - password
+      properties:
+        username:
+          type: string
+        password:
+          type: string
+    TokenResponse:
+      type: object
+      properties:
+        access_token:
+          type: string
+        token_type:
+          type: string
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
